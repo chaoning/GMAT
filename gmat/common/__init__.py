@@ -1,2 +1,3 @@
 from gmat.common.common import *
-from gmat.common.get_logger import get_logger
+
+from gmat.common.is_positive import is_positive

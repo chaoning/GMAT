@@ -15,9 +15,9 @@ from pysnptools.snpreader import Bed
 from .common import *
 
 
-def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, var_com, snp_lst=None,
+def unbalance_condition_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, var_com, condition_snp, snp_lst=None,
             tfix=None, fix=None, forder=3, aorder=3, porder=3, na_method='omit',
-                             prefix_outfile='unbalance_longwas_fixed'):
+                             prefix_outfile='unbalance_condition_longwas_fixed'):
     """
     the longitudinal GWAS for the unbalanced data treating the SNP as the time varied fixed effect.
     :param data_file: the data file. The first row is the variate names whose first initial position is alphabetical.
@@ -30,6 +30,7 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
     :param kin_file: the file for genomic relationship matrix. This file can be produced by
     gmat.gmatrix.agmat function using agmat(bed_file, inv=True, small_val=0.001, out_fmt='id_id_val')
     :param var_com: the estimated variance parameters by the gmat.longwas.unbalance.unbalance_varcom function.
+    :param condition_snp: conditional snp
     :param snp_lst: the snp list to test. Default is None.
     :param tfix: A class variate name for the time varied fixed effect. Default value is None. Only one time varied
     fixed effect can be included in the current version.
@@ -276,30 +277,52 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
         logging.info('Missing genotypes are imputed with random genotypes.')
         snp_mat = impute_geno(snp_mat)
     snp_mat = snp_mat[id_order_index, :]
+    condition_snp_index = snp_on_disk.sid_to_index([condition_snp])[0]
+    condition_snp_val = snp_on_disk[:, condition_snp_index].read().val
+    condition_snp_val = condition_snp_val[id_order_index, 0]
     # snp_mat = snp_mat[:, snp_lst]
     logging.info('#####################################################################')
     logging.info('###Start the fixed regression longitudinal GWAS for unbalance data###')
     logging.info('#####################################################################')
     chi_df = leg_lst[0].shape[1]
+    eff_con_vec = []
+    chi_con_vec = []
+    p_con_vec = []
+    p_min_con_vec = []
+    p_accum_con_vec = []
     eff_vec = []
     chi_vec = []
     p_vec = []
     p_min_vec = []
     p_accum_vec = []
+    snp_condition = list(map(lambda x, y: x*y, leg_lst, list(condition_snp_val)))
+    snp_condition = np.concatenate(snp_condition, axis=0)
+    xmat = np.concatenate((xmat, snp_condition), axis=1)
     for i in tqdm(range(snp_mat.shape[1])):
         snp_fix = list(map(lambda x, y: x*y, leg_lst, list(snp_mat[:, i])))
         snp_fix = np.concatenate(snp_fix, axis=0)
         snp_fix = np.concatenate((xmat, snp_fix), axis=1)
         xv = np.dot(snp_fix.T, vmat)
         xvx = np.dot(xv, snp_fix)
-        xvx = np.linalg.inv(xvx)
+        snp_index = list(range(-chi_df, 0))
+        con_snp_index = list(range(-2*chi_df, -chi_df))
+        try:
+            xvx = np.linalg.inv(xvx)
+        except Exception as e:
+            del e
+            con_snp_index = snp_index[:]
+            snp_fix = snp_fix[:, :-chi_df]
+            xv = np.dot(snp_fix.T, vmat)
+            xvx = np.dot(xv, snp_fix)
+            xvx = np.linalg.inv(xvx)
         xvy = np.dot(xv, y)
         b = np.dot(xvx, xvy)
-        eff = b[-chi_df:, -1]
-        eff_var = xvx[-chi_df:, -chi_df:]
+        eff = b[snp_index, -1]
+        eff_var = xvx[snp_index, :]
+        eff_var = eff_var[:, snp_index]
         chi_val = np.sum(np.dot(np.dot(eff.T, np.linalg.inv(eff_var)), eff))
         p_val = chi2.sf(chi_val, chi_df)
-        eff_vec.append(b[-chi_df:, -1])
+        eff_vec.append(eff)
         chi_vec.append(chi_val)
         p_vec.append(p_val)
         p_tpoint_vec = []
@@ -315,6 +338,28 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
         chi_accum = eff_accum*eff_accum/eff_var_accum
         p_accum = chi2.sf(chi_accum, 1)
         p_accum_vec.append(p_accum)
+        # conditional SNP
+        eff = b[con_snp_index, -1]
+        eff_var = xvx[con_snp_index, :]
+        eff_var = eff_var[:, con_snp_index]
+        chi_val = np.sum(np.dot(np.dot(eff.T, np.linalg.inv(eff_var)), eff))
+        p_val = chi2.sf(chi_val, chi_df)
+        eff_con_vec.append(eff)
+        chi_con_vec.append(chi_val)
+        p_con_vec.append(p_val)
+        p_tpoint_vec = []
+        for k in range(leg_tpoint_mat.shape[0]):
+            eff_tpoint = np.sum(np.dot(leg_tpoint_mat[k, :], eff))
+            eff_var_tpoint = np.sum(np.dot(leg_tpoint_mat[k, :], np.dot(eff_var, leg_tpoint_mat[k, :])))
+            chi_tpoint = eff_tpoint * eff_tpoint / eff_var_tpoint
+            p_tpoint = chi2.sf(chi_tpoint, 1)
+            p_tpoint_vec.append(p_tpoint)
+        p_min_con_vec.append(min(p_tpoint_vec))
+        eff_accum = np.sum(np.dot(leg_tpoint_accum, eff))
+        eff_var_accum = np.sum(np.dot(leg_tpoint_accum, np.dot(eff_var, leg_tpoint_accum)))
+        chi_accum = eff_accum * eff_accum / eff_var_accum
+        p_accum = chi2.sf(chi_accum, 1)
+        p_accum_con_vec.append(p_accum)
     logging.info('Finish association analysis')
     logging.info('***Output***')
     snp_info_file = bed_file + '.bim'
@@ -323,14 +368,24 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
     res_df.columns = ['chro', 'snp_ID', 'pos', 'allele1', 'allele2']
     res_df.loc[:, 'order'] = snp_lst
     res_df = res_df.iloc[:, [5, 0, 1, 2, 3, 4]]
+    # conditional SNP
+    eff_con_vec = np.array(eff_con_vec)
+    for i in range(eff_con_vec.shape[1]):
+        col_ind = 'con_eff' + str(i)
+        res_df[col_ind] = eff_con_vec[:, i]
+    res_df['con_chi_val'] = chi_con_vec
+    res_df['con_p_val'] = p_con_vec
+    res_df['con_p_min'] = p_min_con_vec
+    res_df['con_p_accum'] = p_accum_con_vec
+    # SNP
     eff_vec = np.array(eff_vec)
     for i in range(eff_vec.shape[1]):
         col_ind = 'eff' + str(i)
-        res_df.loc[:, col_ind] = eff_vec[:, i]
-    res_df.loc[:, 'chi_val'] = chi_vec
-    res_df.loc[:, 'p_val'] = p_vec
-    res_df.loc[:, 'p_min'] = p_min_vec
-    res_df.loc[:, 'p_accum'] = p_accum_vec
+        res_df[col_ind] = eff_vec[:, i]
+    res_df['chi_val'] = chi_vec
+    res_df['p_val'] = p_vec
+    res_df['p_min'] = p_min_vec
+    res_df['p_accum'] = p_accum_vec
     out_file = prefix_outfile + '.res'
     res_df.to_csv(out_file, sep=' ', index=False)
     return res_df

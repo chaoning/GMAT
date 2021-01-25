@@ -30,8 +30,8 @@ res_fixed = unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_
 """
 
 from gmat.longwas.unbalance import unbalance_condition_longwas_fixed
-prefix_outfile = '../data/mouse_long/unbalance_condition_longwas_fixed2'
-res_fixed = unbalance_condition_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, var_com, condition_snp="JAX00177214", snp_lst=None, tfix=None,
+prefix_outfile = '../data/mouse_long/unbalance_condition_longwas_fixed3'
+res_fixed = unbalance_condition_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, var_com, condition_snp="UNC30664376", snp_lst=None, tfix=None,
                              prefix_outfile=prefix_outfile)
 
 """

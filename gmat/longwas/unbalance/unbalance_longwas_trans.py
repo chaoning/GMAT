@@ -11,6 +11,7 @@ from functools import reduce
 from patsy import dmatrix
 
 from gmat.process_plink.process_plink import read_plink, impute_geno
+from pysnptools.snpreader import Bed
 from .common import *
 
 
@@ -258,12 +259,10 @@ def unbalance_longwas_trans(data_file, id, tpoint, trait, bed_file, kin_file, va
     xvxmat = linalg.inv(xvxmat)
     pmat = vmat - reduce(np.dot, [vxmat, xvxmat, vxmat.T])
     logging.info('***Read the snp data***')
-    snp_mat = read_plink(bed_file)
-    if np.any(np.isnan(snp_mat)):
-        logging.info('Missing genotypes are imputed with random genotypes.')
-        snp_mat = impute_geno(snp_mat)
-    num_id = snp_mat.shape[0]
-    num_snp = snp_mat.shape[1]
+    # snp_mat = read_plink(bed_file)
+    snp_on_disk = Bed(bed_file, count_A1=False)
+    num_id = snp_on_disk.iid_count
+    num_snp = snp_on_disk.sid_count
     logging.info("There are {:d} individuals and {:d} SNPs.".format(num_id, num_snp))
     fam_df = pd.read_csv(bed_file + '.fam', sep='\s+', header=None)
     id_geno = list(np.array(fam_df.iloc[:, 1], dtype=str))
@@ -276,8 +275,11 @@ def unbalance_longwas_trans(data_file, id, tpoint, trait, bed_file, kin_file, va
     if min(snp_lst) < 0 or max(snp_lst) >= num_snp:
         logging.info('The value in the snp list should be >= {} and < {}', 0, num_snp)
         exit()
+    snp_mat = snp_on_disk[:, snp_lst].read().val
+    if np.any(np.isnan(snp_mat)):
+        logging.info('Missing genotypes are imputed with random genotypes.')
     snp_mat = snp_mat[id_order_index, :]
-    snp_mat = snp_mat[:, snp_lst]
+    # snp_mat = snp_mat[:, snp_lst]
     logging.info('#####################################################################')
     logging.info('###Start the random regression longitudinal GWAS for unbalance data###')
     logging.info('#####################################################################')

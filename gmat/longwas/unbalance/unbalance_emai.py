@@ -6,6 +6,8 @@ from scipy import sparse
 from scipy.sparse import csr_matrix, isspmatrix, hstack, vstack
 import datetime
 import logging
+from gmat.common.is_positive import is_positive
+
 
 from .common import *
 from .pre_mat import *

@@ -6,7 +6,7 @@ import logging
 from scipy.sparse import hstack
 
 
-def em_mme(y, xmat, zmat_lst, gmat_inv_lst, init=None, maxiter=100, cc_par=1.0e-8):
+def em_mme22(y, xmat, zmat_lst, gmat_inv_lst, init=None, maxiter=100, cc_par=1.0e-8):
     """
     Estimate variance parameters with mme based on em
     :param y: Phenotypic vector
@@ -35,7 +35,8 @@ def em_mme(y, xmat, zmat_lst, gmat_inv_lst, init=None, maxiter=100, cc_par=1.0e-
     xzmat = hstack([xmat, zmat_concat])
     coef_null = xzmat.T.dot(xzmat)  # the coefficient matrix
     rhs_null = xzmat.T.dot(y)  # the right hand matrix
-    logging.info('Initial variances: ' + ' '.join(list(np.array(var_com, dtype=str))))
+    h_mat = np.eye(xmat.shape[0]) - reduce(np.dot, [xmat, np.linalg.inv(np.dot(xmat.T, xmat)), xmat.T])
+    zhz_mat = zmat_concat.T.dot((zmat_concat.T.dot(h_mat)).T)
     logging.info("Start iteration")
     iter = 0
     cc_par_val = 10000.0
@@ -47,21 +48,21 @@ def em_mme(y, xmat, zmat_lst, gmat_inv_lst, init=None, maxiter=100, cc_par=1.0e-
         for k in range(num_var - 1):
             indexa = df_index[k]
             indexb = df_index[k + 1]
-            coef[indexa:indexb, indexa:indexb] = coef[indexa:indexb, indexa:indexb] + gmat_inv_lst[k]/var_com[k]
+            coef[indexa:indexb, indexa:indexb] = coef[indexa:indexb, indexa:indexb] + gmat_inv_lst[k] / var_com[k]
         # right hand
         rhs_mat = rhs_null/var_com[-1]
-        coef_inv = linalg.inv(coef)
+        coef_inv = np.linalg.inv(coef)
         eff = np.dot(coef_inv, rhs_mat)
         # error variance
-        e_hat = y - xzmat.dot(eff)
-        var_com_new[-1] = np.sum(np.dot(e_hat.T, e_hat)) + \
-                          np.sum((xzmat.T.dot(xzmat)).multiply(coef_inv))  # fast trace calculation
-        var_com_new[-1] /= y.shape[0]
+        y_zu = y - zmat_concat.dot(eff[xmat_df:, :])
+        var_com_new[-1] = np.sum(reduce(np.dot, [y_zu.T, h_mat, y_zu])) + \
+                            np.sum(zhz_mat * coef_inv[xmat_df:, xmat_df:]) # fast trace calculation
+        var_com_new[-1] /= n - xmat_df
         # random variances
         for k in range(num_var - 1):
             indexa = df_index[k]
             indexb = df_index[k + 1]
-            var_com_new[k] = np.sum(coef_inv[indexa:indexb, indexa:indexb]*gmat_inv_lst[k]) \
+            var_com_new[k] = np.sum(coef_inv[indexa:indexb, indexa:indexb] * gmat_inv_lst[k]) \
                              + np.sum(reduce(np.dot, [eff[indexa:indexb, :].T, gmat_inv_lst[k], eff[indexa:indexb, :]]))
             qk = gmat_inv_lst[k].shape[0]
             var_com_new[k] /= qk
@@ -82,7 +83,7 @@ def em_mme(y, xmat, zmat_lst, gmat_inv_lst, init=None, maxiter=100, cc_par=1.0e-
     return var_com
 
 
-def em_vmat(y, xmat, zmat_lst, gmat_lst, init=None, maxiter=100, cc_par=1.0e-8):
+def em_vmat22(y, xmat, zmat_lst, gmat_lst, init=None, maxiter=100, cc_par=1.0e-8):
     """
     Estimate variance parameters with vmat based on em
     :param y: Phenotypic vector
@@ -105,6 +106,7 @@ def em_vmat(y, xmat, zmat_lst, gmat_lst, init=None, maxiter=100, cc_par=1.0e-8):
     zgzmat_lst = []
     for val in range(num_var - 1):
         zgzmat_lst.append(zmat_lst[val].dot((zmat_lst[val].dot(gmat_lst[val])).T))
+    h_mat = np.eye(n) - reduce(np.dot, [xmat, linalg.inv(np.dot(xmat.T, xmat)), xmat.T])
     logging.info('Initial variances: ' + ' '.join(list(np.array(var_com, dtype=str))))
     logging.info("#####Start the iteration#####\n\n")
     iter = 0
@@ -116,15 +118,23 @@ def em_vmat(y, xmat, zmat_lst, gmat_lst, init=None, maxiter=100, cc_par=1.0e-8):
         vmat = np.diag([var_com[-1]] * n)
         for val in range(len(zgzmat_lst)):
             vmat += zgzmat_lst[val] * var_com[val]
+        zgzmat = vmat - np.diag([var_com[-1]] * n)
         vmat = linalg.inv(vmat)
         vxmat = np.dot(vmat, xmat)
         xvxmat = np.dot(xmat.T, vxmat)
         xvxmat = linalg.inv(xvxmat)
-        pmat = vmat - reduce(np.dot, [vxmat, xvxmat, vxmat.T])
+        vxxvxxv_mat = reduce(np.dot, [vxmat, xvxmat, vxmat.T])
+        pmat = vmat - vxxvxxv_mat
         pymat = np.dot(pmat, y)
         # Updated variances
-        var_com_new[-1] = var_com[-1] - var_com[-1] * var_com[-1] * np.trace(pmat)/n + \
-                          var_com[-1] * var_com[-1] * np.sum(np.dot(pymat.T, pymat))/n
+        trace_term1 = reduce(np.dot, [xmat, xvxmat, xmat.T])
+        trace_term2 = reduce(np.dot, [xmat, xvxmat, vxmat.T]) * var_com[-1]
+        trace_term = trace_term1 - trace_term2 + np.diag([var_com[-1]] * n) - vmat*var_com[-1]*var_com[-1] - \
+                     trace_term2.T + vxxvxxv_mat * var_com[-1] * var_com[-1]
+        trace_term = np.sum(trace_term * h_mat)
+        y_zu = y - np.dot(zgzmat, pymat)
+        var_com_new[-1] = trace_term + np.sum(reduce(np.dot, [y_zu.T, h_mat, y_zu]))
+        var_com_new[-1] /= n - xmat.shape[1]
         for k in range(num_var - 1):
             var_com_new[k] = -np.sum(zgzmat_lst[k] * pmat) + np.sum(reduce(np.dot, [pymat.T, zgzmat_lst[k], pymat]))
             var_com_new[k] = var_com[k] + var_com[k] * var_com[k] / gmat_lst[k].shape[0] * var_com_new[k]
@@ -141,4 +151,3 @@ def em_vmat(y, xmat, zmat_lst, gmat_lst, init=None, maxiter=100, cc_par=1.0e-8):
     else:
         logging.info('Variances not converged.')
     return var_com
-

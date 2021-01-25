@@ -4,10 +4,10 @@ from scipy import linalg
 from scipy import sparse
 from scipy.sparse import csr_matrix, hstack
 from scipy.stats import chi2
-import datetime
 import gc
 import logging
 from tqdm import tqdm
+from functools import reduce
 from patsy import dmatrix
 
 from gmat.process_plink.process_plink import read_plink, impute_geno
@@ -15,11 +15,11 @@ from pysnptools.snpreader import Bed
 from .common import *
 
 
-def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, var_com, snp_lst=None,
+def unbalance_condition_longwas_trans(data_file, id, tpoint, trait, bed_file, kin_file, var_com, condition_snp, snp_lst=None,
             tfix=None, fix=None, forder=3, aorder=3, porder=3, na_method='omit',
-                             prefix_outfile='unbalance_longwas_fixed'):
+                             prefix_outfile='unbalance_condition_longwas_trans'):
     """
-    the longitudinal GWAS for the unbalanced data treating the SNP as the time varied fixed effect.
+    the longitudinal GWAS for the unbalanced data treating the SNP as the time varied random effect.
     :param data_file: the data file. The first row is the variate names whose first initial position is alphabetical.
     For the class variates, the first letter must be capital; for the covariates (continuous variates), the first letter
     must be lowercase.
@@ -30,6 +30,7 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
     :param kin_file: the file for genomic relationship matrix. This file can be produced by
     gmat.gmatrix.agmat function using agmat(bed_file, inv=True, small_val=0.001, out_fmt='id_id_val')
     :param var_com: the estimated variance parameters by the gmat.longwas.unbalance.unbalance_varcom function.
+    :param condition_snp: conditional snp
     :param snp_lst: the snp list to test. Default is None.
     :param tfix: A class variate name for the time varied fixed effect. Default value is None. Only one time varied
     fixed effect can be included in the current version.
@@ -173,7 +174,7 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
     for i in range(1, max_id):
         leg_lst.append(leg_mt(data_df[data_df[id] == i][tpoint], tmax, tmin, forder))
     tpoint_vec = sorted(set(data_df[tpoint]))
-    leg_tpoint_mat = leg_mt(np.array(tpoint_vec), tmax, tmin, forder)
+    leg_tpoint_mat = leg_mt(np.array(tpoint_vec), tmax, tmin, aorder)
     leg_tpoint_accum = np.sum(leg_tpoint_mat, axis=0)
     logging.info('***Read the kinship matrix***')
     logging.info('Kinship file: ' + kin_file)
@@ -234,7 +235,7 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
         for j in range(len(zmat[i])):
             temp.append(temp[-1] + zmat[i][j].shape[1])
         eff_ind.append(temp)
-    logging.info('***Calculate the phenotypic (co)variance***')
+    logging.info('***Calculate the phenotypic (co)variance and P = V(-1) - V(-1)X[X(T)V(-1)X](-1)X(T)V(-1)***')
     add_cov = var_com.loc[var_com.loc[:, 'vari']==1, :]
     row = np.array(add_cov['varij']) - 1
     col = np.array(add_cov['varik']) - 1
@@ -254,17 +255,35 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
     vmat_diag = np.diag(vmat) + res_var
     np.fill_diagonal(vmat, vmat_diag)
     vmat = linalg.inv(vmat)
+    fam_df = pd.read_csv(bed_file + '.fam', sep='\s+', header=None)
+    id_geno = list(np.array(fam_df.iloc[:, 1], dtype=str))
+    id_order_index = []
+    for i in id_order:
+        id_order_index.append(id_geno.index(i))
+    snp_on_disk = Bed(bed_file, count_A1=False)
+    condition_snp_index = snp_on_disk.sid_to_index([condition_snp])[0]
+    condition_snp_val = snp_on_disk[:, condition_snp_index].read().val
+    condition_snp_val = condition_snp_val[id_order_index, 0]
+    snp_condition = list(map(lambda x, y: x * y, leg_lst, list(condition_snp_val)))
+    snp_condition = np.concatenate(snp_condition, axis=0)
+    xmat = np.concatenate((xmat, snp_condition), axis=1)
+    vxmat = np.dot(vmat, xmat)
+    xvxmat = np.dot(xmat.T, vxmat)
+    xvxmat = linalg.inv(xvxmat)
+    pmat = vmat - reduce(np.dot, [vxmat, xvxmat, vxmat.T])
     logging.info('***Read the snp data***')
     # snp_mat = read_plink(bed_file)
     snp_on_disk = Bed(bed_file, count_A1=False)
     num_id = snp_on_disk.iid_count
     num_snp = snp_on_disk.sid_count
     logging.info("There are {:d} individuals and {:d} SNPs.".format(num_id, num_snp))
+    """
     fam_df = pd.read_csv(bed_file + '.fam', sep='\s+', header=None)
     id_geno = list(np.array(fam_df.iloc[:, 1], dtype=str))
     id_order_index = []
     for i in id_order:
         id_order_index.append(id_geno.index(i))
+    """
     if snp_lst is None:
         snp_lst = range(num_snp)
     snp_lst = list(snp_lst)
@@ -274,44 +293,39 @@ def unbalance_longwas_fixed(data_file, id, tpoint, trait, bed_file, kin_file, va
     snp_mat = snp_on_disk[:, snp_lst].read().val
     if np.any(np.isnan(snp_mat)):
         logging.info('Missing genotypes are imputed with random genotypes.')
-        snp_mat = impute_geno(snp_mat)
     snp_mat = snp_mat[id_order_index, :]
     # snp_mat = snp_mat[:, snp_lst]
     logging.info('#####################################################################')
-    logging.info('###Start the fixed regression longitudinal GWAS for unbalance data###')
+    logging.info('###Start the random regression longitudinal GWAS for unbalance data###')
     logging.info('#####################################################################')
-    chi_df = leg_lst[0].shape[1]
+    qpmat = zmat_con_lst[0].T.dot(pmat)
+    qpqmat = zmat_con_lst[0].T.dot(qpmat.T)
+    qpymat = np.dot(qpmat, y)
+    chi_df = add_cov.shape[1]
     eff_vec = []
     chi_vec = []
     p_vec = []
     p_min_vec = []
     p_accum_vec = []
     for i in tqdm(range(snp_mat.shape[1])):
-        snp_fix = list(map(lambda x, y: x*y, leg_lst, list(snp_mat[:, i])))
-        snp_fix = np.concatenate(snp_fix, axis=0)
-        snp_fix = np.concatenate((xmat, snp_fix), axis=1)
-        xv = np.dot(snp_fix.T, vmat)
-        xvx = np.dot(xv, snp_fix)
-        xvx = np.linalg.inv(xvx)
-        xvy = np.dot(xv, y)
-        b = np.dot(xvx, xvy)
-        eff = b[-chi_df:, -1]
-        eff_var = xvx[-chi_df:, -chi_df:]
-        chi_val = np.sum(np.dot(np.dot(eff.T, np.linalg.inv(eff_var)), eff))
+        snpi = np.kron(add_cov, snp_mat[:, i:(i+1)].T)
+        snpi_eff = np.dot(snpi, qpymat)
+        snpi_var = reduce(np.dot, [snpi, qpqmat, snpi.T])
+        chi_val = np.sum(reduce(np.dot, [snpi_eff.T, linalg.inv(snpi_var), snpi_eff]))
         p_val = chi2.sf(chi_val, chi_df)
-        eff_vec.append(b[-chi_df:, -1])
+        eff_vec.append(snpi_eff[:, -1])
         chi_vec.append(chi_val)
         p_vec.append(p_val)
         p_tpoint_vec = []
         for k in range(leg_tpoint_mat.shape[0]):
-            eff_tpoint = np.sum(np.dot(leg_tpoint_mat[k, :], eff))
-            eff_var_tpoint = np.sum(np.dot(leg_tpoint_mat[k, :], np.dot(eff_var, leg_tpoint_mat[k, :])))
+            eff_tpoint = np.sum(np.dot(leg_tpoint_mat[k, :], snpi_eff))
+            eff_var_tpoint = np.sum(np.dot(leg_tpoint_mat[k, :], np.dot(snpi_var, leg_tpoint_mat[k, :])))
             chi_tpoint = eff_tpoint*eff_tpoint/eff_var_tpoint
             p_tpoint = chi2.sf(chi_tpoint, 1)
             p_tpoint_vec.append(p_tpoint)
         p_min_vec.append(min(p_tpoint_vec))
-        eff_accum = np.sum(np.dot(leg_tpoint_accum, eff))
-        eff_var_accum = np.sum(np.dot(leg_tpoint_accum, np.dot(eff_var, leg_tpoint_accum)))
+        eff_accum = np.sum(np.dot(leg_tpoint_accum, snpi_eff))
+        eff_var_accum = np.sum(np.dot(leg_tpoint_accum, np.dot(snpi_var, leg_tpoint_accum)))
         chi_accum = eff_accum*eff_accum/eff_var_accum
         p_accum = chi2.sf(chi_accum, 1)
         p_accum_vec.append(p_accum)
