@@ -150,8 +150,9 @@ uvlmm --data pheno --grm test --trait trait --class batch --out test --repeat
 uvlmm --bfile yeast --data pheno --grm test --trait trait --class batch --out test --repeat
 ```
 ### 3.3 多性状全基因组关联分析
-**平衡数据:不同性状在所有个体中均有测量值,无缺失数据**
+**平衡数据:不同性状在所有个体中均有测量值,无缺失数据**  
 参数详解:
+
 ```
  -d, --data [FILE]                        数据文件,包含表头(列名),第一列必须是个体号,缺失值用NA表示
  -b, --bfile [FILE]                        Plink Binary PED files 前缀
@@ -200,8 +201,9 @@ bmvlmm --bfile plink --data phe.balance.txt --grm test --trait trait1,trait2,tra
 
 ```
 
-**非平衡数据:同一个个体的多个性状可能存在缺失测量值**
+**非平衡数据:同一个个体的多个性状可能存在缺失测量值**  
 参数详解:
+
 ```
  -d, --data [FILE]                        数据文件,包含表头(列名),第一列必须是个体号,缺失值用NA表示
  -b, --bfile [FILE]                        Plink Binary PED files 前缀
@@ -247,8 +249,9 @@ unmvlmm --bfile plink --data phe.balance.txt --grm test --trait trait1,trait2,tr
 ```
 
 ### 3.4 纵向性状全基因组关联分析
-**平衡数据:不同个体在所有时间点均有测量值,无缺失**
+**平衡数据:不同个体在所有时间点均有测量值,无缺失**  
 参数详解:
+
 ```
  -d, --data [FILE]                        数据文件,包含表头(列名),第一列必须是个体号,缺失值用NA表示
  -b, --bfile [FILE]                        Plink Binary PED files 前缀
@@ -299,8 +302,9 @@ blongwas --bfile plink --data phe.balance.txt --grm test --trait trait1,trait2,t
 blongwas --bfile plink --data phe.balance.txt --grm test --trait trait1,trait2,trait3,trait4,trait5,trait6,trait7,trait8,trait9,trait10,trait11,trait12,trait13,trait14,trait15,trait16 --tpoint 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 --tclass sex --out test --condition UNC18848064
 ```
 
-**非平衡数据:同一个体在不同时间点可能存在缺失测量值**
+**非平衡数据:同一个体在不同时间点可能存在缺失测量值**  
 参数详解:
+
 ```
 -d, --data [FILE]                        数据文件,包含表头(列名),第一列必须是个体号,缺失值用NA表示
  -b, --bfile [FILE]                        Plink Binary PED files 前缀
