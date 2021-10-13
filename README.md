@@ -1,7 +1,7 @@
 # 使用说明-中文版
 
 ## 1. 联系方式
-nignchao(at)sdau(dot)edu(dot)cn
+ningchao(at)sdau(dot)edu(dot)cn
 
 ## 2. 安装
 所有模块均已在64位linux系统下编译完成,下载并修改为可执行权限即可使用。 
