@@ -4,18 +4,18 @@
 ningchao(at)sdau(dot)edu(dot)cn
 
 ## 2. 安装
-所有模块均已在64位linux系统下编译完成,下载并修改为可执行权限即可使用。 
+所有模块均已在64位linux系统下编译完成,下载并修改为可执行权限即可使用。  
 修改文件权限命令:chmod 777 文件
 
 ## 3.功能模块
 
+### 3.1 关系矩阵构建 
+#### 参数详解: 
 
-
-### 3.1 关系矩阵构建
-参数详解: 
 ```
- -b, --bfile [FILE]			Plink Binary PED files 前缀
+ -b, --bfile [FILE]			Plink Binary PED files前缀
  -d, --dfile [FILE] 		Dosage基因型文件全名
+ -a, --fam [FILE]            PLINK格式的样本信息文件全名
  -o, --out [FILE] 			输出文件前缀
  -g, --grm [string] 		基因组关系矩阵类型
       agrm: 				加性基因组关系矩阵
@@ -27,17 +27,35 @@ ningchao(at)sdau(dot)edu(dot)cn
       ddgrm_as: 			显显上位基因组关系矩阵,其中显性矩阵是生物学意义显性矩阵        
       ddgrm_gs: 			显显上位基因组关系矩阵,其中显性矩阵是育种学意义显性矩阵   
       agrm_dosage: 			加性基因组关系矩阵,读取Dosage基因型文件计算   
- -n, --npart [num, default is 10] 			将全基因组标记等分,分部分读取计算,节省内存
+ -n, --npart [num, default is 20] 			将全基因组标记等分,分部分读取计算,节省内存
  -f, --fmt [num, default is 2] 				关系矩阵输出格式:0,“矩阵”格式;1,“行号、列号、值”格式;2,“个体号、个体号、值”格式
  -i, --inv [No argument] 					求逆矩阵
- -m, --mkl [num, default is 10] 			MKL库线程数
+ -m, --mkl [num, default is max] 			MKL库线程数，默认为当前服务器最大线程数。
  -v, --val [float, Default is 0.001] 		加到矩阵对角线的值,保证矩阵正定
  -s, --skipcols [int, Default is 1] 		读取文件时跳过的列数,仅对Dosage基因型文件(--dfile)有效
  -h, --help 								打印此帮助信息
 ```
+#### 输入文件：  
+
+Plink Binary PED files (*.bed, *.bim, *.fam)：参考PLINK软件说明书  
+
+Dosage基因型文件：第一行为文件头，后面每行表示一个位点的信息，前几列是位点位置信息，后面是个体的基因型编码值（0、1、2）或者基因型剂量（0-2之间的连续值，此外可以是基因表达量、微生物丰度等。读取时，需设置--skipcols参数，跳过位点信息。示例如下，前6列为位点位置信息。
+
+| CHR  | SNP                | (C)M   | POS  | COUNTED | ALT  | 12659_14462 | 12659_14463 | 12659_14464 | 12659_14465 | 12659_14466 | 12659_14467 | 12659_14468 |
+| ---- | :----------------- | ------ | ---- | ------- | ---- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- | ----------- |
+| 1    | mCV25266528        | 10.977 | 0    | A       | T    | 1           | 1           | 1           | 0           | 1           | 1           | 1           |
+| 1    | gnf01.037.906      | 20.135 | 0    | A       | T    | 1           | 2           | 1           | 0           | 1           | 1           | 1           |
+| 1    | petAF067836-350A-1 | 29.195 | 0    | T       | A    | 1           | 1           | 1           | 1           | 1           | 1           | 1           |
+| 1    | mCV23057534        | 38.008 | 0    | A       | T    | 2           | 2           | 1           | 1           | 1           | 1           | 2           |
+| 1    | rs13475932         | 39.214 | 0    | A       | T    | 2           | 2           | 2           | 2           | 2           | 2           | 2           |
+
+PLINK格式的样本信息文件：即Plink Binary PED files 文件中的*.fam文件，Dosage基因型文件出现时需要提供此文件，用以提供个体信息。
+
 #### 加性基因组关系矩阵
+
 读取Plink Binary PED files (plink.bed, plink.bim, plink.fam),根据需求,可生成不同输出格式的加性基因组关系矩阵。 
 参考文献:VanRaden PM. Efficient methods to compute genomic predictions. J Dairy Sci. 2008 Nov;91(11):4414-23. 
+
 ```
 # 1. 默认参数输出
 gmatrix --bfile plink --grm agrm --out test 
@@ -52,11 +70,11 @@ gmatrix --bfile plink --grm agrm --fmt 0 --out test
 # 4. 输出逆矩阵
 gmatrix --bfile plink --grm agrm --inv --out test 
 
-# 5. 将标记分部分读取、依次计算以节省内存(增加--npart参数值,默认为10)
+# 5. 将标记分部分读取、依次计算以节省内存(增加--npart参数值,默认为20)
 gmatrix --bfile plink --grm agrm --npart 30 --out test 
 
-# 6. 增加mkl线程数,提高运算效率(默认为10)
-gmatrix --bfile plink --grm agrm --mkl_num_threads 30 --out test 
+# 6. 设置mkl线程数(默认为当前服务器最大线程数)
+gmatrix --bfile plink --grm agrm --mkl_num_threads 10 --out test 
 
 # 7. 矩阵对角线上加值,保证正定(默认为0.001)
 gmatrix --bfile plink --grm agrm --val 0.01 --out test 
