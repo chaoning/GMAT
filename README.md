@@ -433,6 +433,15 @@ mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 -
 ```
 
 ### 3.5纵向性状全基因组关联分析
+
+Cite：
+
+Chao Ning, Dan Wang, Lei Zhou, Julong Wei, Yuanxin Liu, Huimin Kang, Shengli Zhang, Xiang Zhou, Shizhong Xu and Jian-Feng Liu. Efficient Multivariate Analysis Algorithms for Longitudinal Genome-wide Association Studies. *Bioinformatics*, 2019, 35(23): 4879-4885.
+
+Chao Ning†, Dan Wang†, Xianrui Zheng†, Qin Zhang, Shengli Zhang, Raphael Mrode, Jian-Feng Liu. Eigen decomposition expedites longitudinal genome-wide association studies for milk production traits in Chinese Holstein. *Genetics Selection Evolution*, 2018, 50(1): 12
+
+Chao Ning†, Huimin Kang†, Lei Zhou, Dan Wang, Haifei Wang, Aiguo Wang, Jinluan Fu, Shengli Zhang, Jian-Feng Liu. Performance gains in genome-wide association studies for longitudinal traits via modeling time-varied effects. *Scientific Reports*, 2017, 7(1): 590.
+
 #### （1）参数详解
 
 ```
@@ -570,7 +579,13 @@ mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 -
 mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test_condition --condition 7895795
 ```
 
-#### 3.6非加性效应检验
+### 3.6非加性效应检验
+
+Cite:
+
+Dan Wang, Hui Tang, Jian-Feng Liu, Shizhong Xu, Qin Zhang* and Chao Ning*. Rapid Epistatic Mixed Model Association Studies by Controlling Multiple Polygenic Effects. *Bioinformatics*, 2020.
+
+Chao Ning, Dan Wang, Huimin Kang, Raphael Mrode, Lei Zhou, Shizhong Xu, Jian-Feng Liu. A rapid epistatic mixed-model association analysis by linear retransformations of genomic estimated values. *Bioinformatics*, 2018, 34(11): 1817-1825.
 
 #### （1）参数详解
 
