@@ -13,27 +13,30 @@ ningchao(at)sdau(dot)edu(dot)cn
 #### （1）参数详解: 
 
 ```
- -b, --bfile [FILE]			Plink Binary PED files前缀
- -d, --dfile [FILE] 		Dosage基因型文件全名
- -a, --fam [FILE]            PLINK格式的样本信息文件全名
- -o, --out [FILE] 			输出文件前缀
- -g, --grm [string] 		基因组关系矩阵类型
-      agrm: 				加性基因组关系矩阵
-      dgrm_as: 				显性基因组关系矩阵,生物学意义显性矩阵,可用于关联分析
-      dgrm_gs: 				显性基因组关系矩阵,育种学意义显性矩阵,用于显性效应剖分、基因组选择
-      aagrm: 				加加上位基因组关系矩阵
-      adgrm_as: 			加显上位基因组关系矩阵,其中显性矩阵是生物学意义显性矩阵
-      adgrm_gs: 			加显上位基因组关系矩阵,其中显性矩阵是育种学意义显性矩阵
-      ddgrm_as: 			显显上位基因组关系矩阵,其中显性矩阵是生物学意义显性矩阵        
-      ddgrm_gs: 			显显上位基因组关系矩阵,其中显性矩阵是育种学意义显性矩阵   
-      agrm_dosage: 			加性基因组关系矩阵,读取Dosage基因型文件计算   
- -n, --npart [num, default is 20] 			将全基因组标记等分,分部分读取计算,节省内存
- -f, --fmt [num, default is 2] 				关系矩阵输出格式:0,“矩阵”格式;1,“行号、列号、值”格式;2,“个体号、个体号、值”格式
- -i, --inv [No argument] 					求逆矩阵
- -m, --mkl [num, default is max] 			MKL库线程数，默认为当前服务器最大线程数。
- -v, --val [float, Default is 0.001] 		加到矩阵对角线的值,保证矩阵正定
- -s, --skipcols [int, Default is 1] 		读取文件时跳过的列数,仅对Dosage基因型文件(--dfile)有效
- -h, --help 								打印此帮助信息
+ -b, --bfile [FILE]                                      Plink Binary PED files前缀
+ -d, --dfile [FILE]                                      Dosage基因型文件全名
+ -a, --fam [FILE]                                        PLINK格式的样本信息文件全名
+ -o, --out [FILE]                                        输出文件前缀
+ -g, --grm [agrm, dgrm_as, dgrm_gs, aagrm, 
+            adgrm_as, adgrm_gs, ddgrm_as, 
+            ddgrm_gs, agrm_dosage]                       基因组关系矩阵类型
+            agrm:                                        加性基因组关系矩阵
+            dgrm_as:                                     显性基因组关系矩阵,生物学意义显性矩阵,可用于关联分析
+            dgrm_gs:                                     显性基因组关系矩阵,育种学意义显性矩阵,用于显性效应剖分、基因组选择
+            aagrm:                                       加加上位基因组关系矩阵
+            adgrm_as:                                    加显上位基因组关系矩阵,其中显性矩阵是生物学意义显性矩阵
+            adgrm_gs:                                    加显上位基因组关系矩阵,其中显性矩阵是育种学意义显性矩阵
+            ddgrm_as:                                    显显上位基因组关系矩阵,其中显性矩阵是生物学意义显性矩阵
+            ddgrm_gs:                                    显显上位基因组关系矩阵,其中显性矩阵是育种学意义显性矩阵   
+            agrm_dosage:                                 加性基因组关系矩阵,读取Dosage基因型文件计算   
+ -n, --npart [num, default is 20]                        将全基因组标记等分,分部分读取计算,节省内存
+ -f, --fmt [num, default is 2]                           关系矩阵输出格式:0,“矩阵”格式;1,“行号、列号、值”格式;2,“个体号、个体号、值”格式
+ -i, --inv [No argument]                                 求逆矩阵
+ -m, --mkl_num_threads [num, default is max]             MKL库线程数，默认为当前服务器最大线程数。
+ -v, --val [float, Default is 0.001]                     加到矩阵对角线的值,保证矩阵正定
+ -s, --skipcols [int, Default is 1]                      读取文件时跳过的列数,仅对Dosage基因型文件(--dfile)有效
+ -h, --help                                              打印此帮助信息
+
 ```
 #### （2）输入文件：  
 
@@ -140,24 +143,24 @@ gmatrix --bfile plink --grm ddgrm_gs --out test
  -d, --data <FILE>                         数据文件,包含表头(列名),第一列必须是个体号,缺失值用NA表示
  -b, --bfile <PLINK>                       Plink Binary PED files 前缀
  -o, --out <FILE>                          输出文件前缀
- -g, --grm <FILE>                          加性基因组关系矩阵前缀,
+ -g, --grm <FILE>                          加性基因组关系矩阵前缀
  -t, --trait <str>                         待分析性状在数据文件中的列名
- --repeat                              		使用重复力模型(有重复测量值的性状,例如,猪产仔数)
- --covar <str1,str2,...,str(n)>            	放入模型中作为固定效应的连续变量列名
- --class <str1,str2,...,str(n)>            	放入模型中作为固定效应的分类变量列名
- --snp_set <start_snp,end_snp>            	起始和终止SNP名字,对此区段的SNP进行关联分析
- --continue                       			估计方差组分时利用上一轮方差组分结果继续迭代
- --condition <SNP1,SNP2,...,SNP(n)>        	加入到固定效应中的SNP名字
- --maxiter <200>                     	    不加SNP标记时估计方差组分的最大迭代次数
- --maxiter0 <30>                    		对每个标记逐个检验时的方差组分迭代次数
- --cc_par <1.0e-8>                  		方差组分收敛标准,方差组分变化差值的平方和的平方根
- --cc_gra <1.0e-6>                  		方差组分收敛标准,一阶偏导的平方和的平方根
- --npart <20>                     			将全基因组标记等分,分部分进行关联分析,以节省内存。
- --exact                       				利用精确的方法进行全基因组关联分析,每个标记均进行方差组分估计。
- --p_cut <1.0e-3>                   		利用近似方式进行关联分析时,低于此P值的SNP利用精确方法重新计算P值。
- --parallel <ith,total>               		全基因组标记等分为total份,仅对第i份进行分析。
- --mkl_num_threads <max>                	MKL线程数，默认为当前服务器最大线程数。
- -h, --help                       			打印此帮助信息并退出。
+ --repeat                                  使用重复力模型(有重复测量值的性状,例如,猪产仔数)
+ --covar <str1,str2,...,str(n)>            放入模型中作为固定效应的连续变量列名
+ --class <str1,str2,...,str(n)>            放入模型中作为固定效应的分类变量列名
+ --snp_set <start_snp,end_snp>             起始和终止SNP名字,对此区段的SNP进行关联分析
+ --continue                                估计方差组分时利用上一轮方差组分结果继续迭代
+ --condition <SNP1,SNP2,...,SNP(n)>        加入到固定效应中的SNP名字
+ --maxiter <200>                           不加SNP标记时估计方差组分的最大迭代次数
+ --maxiter0 <30>                           对每个标记逐个检验时的方差组分迭代次数
+ --cc_par <1.0e-8>                         方差组分收敛标准,方差组分变化差值的平方和的平方根
+ --cc_gra <1.0e-6>                         方差组分收敛标准,一阶偏导的平方和的平方根
+ --npart <20>                              将全基因组标记等分,分部分进行关联分析,以节省内存。
+ --exact                                   利用精确的方法进行全基因组关联分析,每个标记均进行方差组分估计。
+ --p_cut <1.0e-3>                          利用近似方式进行关联分析时,低于此P值的SNP利用精确方法重新计算P值。
+ --parallel <ith,total>                    全基因组标记等分为total份,仅对第i份进行分析。
+ --mkl_num_threads <max>                   MKL线程数，默认为当前服务器最大线程数。
+ -h, --help                                打印此帮助信息并退出。
 ```
 #### （2）输入文件
 
