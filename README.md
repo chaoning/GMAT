@@ -53,9 +53,9 @@ PLINK格式的样本信息文件：即Plink Binary PED files 文件中的*.fam�
 
 #### （3）输出文件：
 
-关系矩阵文件：*.<grm>.<fmt>_fmt，依据给出--fmt参数的不同，输出不同格式的基因组关系矩阵，--fmt 0输出矩阵格式，--fmt 1输出行号、列号、值形式，--fmt 2输出个体号、个体号、值形式。
+关系矩阵文件：*\.\<grm\>\.\<fmt\>_fmt，依据给出--fmt参数的不同，输出不同格式的基因组关系矩阵，--fmt 0输出矩阵格式，--fmt 1输出行号、列号、值形式，--fmt 2输出个体号、个体号、值形式。
 
-关系矩阵的逆矩阵文件：*.<giv>.<fmt>_fmt，依据给出--fmt参数的不同，输出不同格式的基因组关系矩阵的逆矩阵。
+关系矩阵的逆矩阵文件：*.\<giv\>.\<fmt\>_fmt，依据给出--fmt参数的不同，输出不同格式的基因组关系矩阵的逆矩阵。
 
 个体号文件：*.id，与.fam文件的第二列相同
 
@@ -175,7 +175,7 @@ gmatrix --bfile plink --grm ddgrm_gs --out test
 | 14469 | 1    | 1    | 91   | 1     | 0.59  |
 | 14470 | 1    | 1    | 124  | 0     | 0.13  |
 
-加性基因组关系矩阵文件：gmatrix模块构建的加性基因组关系矩阵，包含关系矩阵和个体号文件，关系矩阵为个体号、个体号、值格式。可调用gmatrix --bfile <PLINK> --grm agrm --out <FILE> 实现。
+加性基因组关系矩阵文件：gmatrix模块构建的加性基因组关系矩阵，包含关系矩阵和个体号文件，关系矩阵为个体号、个体号、值格式。可调用gmatrix --bfile \<PLINK\> --grm agrm --out \<FILE\> 实现。
 
 Plink Binary PED files (*.bed, *.bim, *.fam)：参考PLINK软件说明书 
 
@@ -337,7 +337,7 @@ multigrm --data pheno --grm test.agrm.id_fmt,test.dgrm_as.id_fmt,test.aagrm.id_f
 | 01_09 | 0.940961 | NA       |
 | 01_10 | -0.05571 | 0.26933  |
 
-加性基因组关系矩阵文件：gmatrix模块构建的加性基因组关系矩阵，包含关系矩阵和个体号文件，关系矩阵为个体号、个体号、值格式。可调用gmatrix --bfile <PLINK> --grm agrm --out <FILE> 实现。
+加性基因组关系矩阵文件：gmatrix模块构建的加性基因组关系矩阵，包含关系矩阵和个体号文件，关系矩阵为个体号、个体号、值格式。可调用gmatrix --bfile \<PLINK\> --grm agrm --out \<FILE\> 实现。
 
 Plink Binary PED files (\*.bed, \*.bim, \*.fam)：参考PLINK软件说明书 
 
@@ -620,7 +620,7 @@ mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 -
 | 14469 | 1    | 1    | 91   | 1     | 0.59  |
 | 14470 | 1    | 1    | 124  | 0     | 0.13  |
 
-加性基因组关系矩阵文件：gmatrix模块构建的加性基因组关系矩阵，包含关系矩阵和个体号文件，关系矩阵为个体号、个体号、值格式。可调用gmatrix --bfile <PLINK> --grm agrm --out <FILE> 实现。
+加性基因组关系矩阵文件：gmatrix模块构建的加性基因组关系矩阵，包含关系矩阵和个体号文件，关系矩阵为个体号、个体号、值格式。可调用gmatrix --bfile \<PLINK\> --grm agrm --out \<FILE\> 实现。
 
 Plink Binary PED files (*.bed, *.bim, *.fam)：参考PLINK软件说明书 
 
