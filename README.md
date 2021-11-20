@@ -564,22 +564,22 @@ gmatrix --bfile plink --grm agrm --out test
 longwas --unbalance --data phe.unbalance.txt --grm test --trait trait --tpoint weak --tclass sex --out test_un
 
 # 全基因组关联分析
-mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test
+longwas --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test
 # test.0_28220.res为主要输出结果文件
 
 # 将标记等分为3份进行全基因组关联分析，并行提交，缩短运算时间
-mvlmm --unbalance --data pheno2 --grm test --trait trait1,trait2 --out test  # 估计方差组分
-mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test --continue --maxiter 0 --parallel 1,3
-mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test --continue --maxiter 0 --parallel 2,3
-mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test --continue --maxiter 0 --parallel 3,3
+longwas --unbalance --data pheno2 --grm test --trait trait1,trait2 --out test  # 估计方差组分
+longwas --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test --continue --maxiter 0 --parallel 1,3
+longwas --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test --continue --maxiter 0 --parallel 2,3
+longwas --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test --continue --maxiter 0 --parallel 3,3
 # 加入"--continue --maxiter 0"表示以null模型估计的方差组分为初值，不迭代，直接用于全基因组关联分析，避免多次估计方差组分耗时
 # test.0_9406.res、test.9406_18812.res和test.18812_28220.res为主要结果文件，合并后为全基因组分析结果
 
 # 对一区段内标记进行关联分析
-mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test --snp_set 7808236,8836653
+longwas --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test --snp_set 7808236,8836653
 
 # 加入Top SNP进行条件GWAS分析
-mvlmm --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test_condition --condition 7895795
+longwas --unbalance --bfile yeast --data pheno2 --grm test --trait trait1,trait2 --out test_condition --condition 7895795
 ```
 
 ### 3.6非加性效应检验
