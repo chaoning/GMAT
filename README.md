@@ -1,6 +1,15 @@
 # 使用说明-中文版
 
+## 版本更新
+
+### 1.01版
+
+时间：2021年11月29日
+
+说明：加入带权重的加性基因组关系矩阵模块
+
 ## 1. 联系方式
+
 ningchao(at)sdau(dot)edu(dot)cn
 
 ## 2. 安装
@@ -17,10 +26,12 @@ ningchao(at)sdau(dot)edu(dot)cn
  -d, --dfile [FILE]                                      Dosage基因型文件全名
  -a, --fam [FILE]                                        PLINK格式的样本信息文件全名
  -o, --out [FILE]                                        输出文件前缀
+ -w, --wfile [FILE]                                      权重文件，一行一个数字，代表对应标记顺序的权重值
  -g, --grm [agrm, dgrm_as, dgrm_gs, aagrm, 
             adgrm_as, adgrm_gs, ddgrm_as, 
             ddgrm_gs, agrm_dosage]                       基因组关系矩阵类型
             agrm:                                        加性基因组关系矩阵
+            agrm_wt:                                     加权加性基因组关系矩阵
             dgrm_as:                                     显性基因组关系矩阵,生物学意义显性矩阵,可用于关联分析
             dgrm_gs:                                     显性基因组关系矩阵,育种学意义显性矩阵,用于显性效应剖分、基因组选择
             aagrm:                                       加加上位基因组关系矩阵
@@ -96,6 +107,9 @@ gmatrix --bfile plink --grm agrm --val 0.01 --out test
 
 # 8. 读取Dosage基因型文件,计算加性基因组关系矩阵
 gmatrix --dfile plink.traw --fam plink.fam --skipcols 6 --grm agrm_dosage --out test 
+
+# 9. 构建加权基因组关系矩阵
+gmatrix --bfile plink --wfile weight --grm agrm_wt --out test
 
 ```
 #### （5）显性基因组关系矩阵
